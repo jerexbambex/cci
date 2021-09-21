@@ -6,36 +6,23 @@ use App\Team;
 use Illuminate\Http\Request;
 use JD\Cloudder\Facades\Cloudder;
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ImageUpload;
 
 class TeamController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    use ImageUpload;
+    
     public function index()
     {
         $teams = Team::all();
         return view('dashboard.team.index', compact('teams'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         return view('dashboard.team.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         request()->validate([
@@ -57,24 +44,9 @@ class TeamController extends Controller
         $attributes['linkedin'] = request()->input('linkedin');
 
         if ($request->hasFile('avatar')) {
-            Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality" => 'auto:best',
-                                            'gravity' => 'face', 
-                                            "fetch_format"=>"auto",
-                                            'width' => 370,
-                                            'height' => 455,
-                                            'crop' => 'fill'
-                                        ));
-            $cloundary_upload = Cloudder::getResult();
-            $results = [
-                'public_id' => $cloundary_upload['public_id'],
-                'url' => $cloundary_upload['url'],
-                'secure_url' => $cloundary_upload['secure_url'],
-                'format' => $cloundary_upload['format'],
-                'bytes' => $cloundary_upload['bytes'],
-            ];
+            request()->validate(['avatar'=> 'mimes:jpeg,bmp,jpg,png|between:1, 6000']);
+
+            $results = $this->imageUpload($request->file('avatar'), 370, 455);
 
             $attributes['avatar'] = json_encode($results);
         }
@@ -135,34 +107,17 @@ class TeamController extends Controller
         $attributes['linkedin'] = request()->input('linkedin');
 
         if ($request->hasFile('avatar')) {
+            request()->validate(['avatar'=> 'mimes:jpeg,bmp,jpg,png|between:1, 6000']);
+
             if ($team->avatar != null) {
                 $publicId = json_decode($team->avatar)->public_id;
-                Cloudder::delete($publicId, array());
+                $this->imageDelete($publicId);
             }
 
-            Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality" => 'auto:best',
-                                            'gravity' => 'face', 
-                                            "fetch_format"=>"auto",
-                                            'width' => 370,
-                                            'height' => 455,
-                                            'crop' => 'fill'
-                                        ));
-            $cloundary_upload = Cloudder::getResult();
-            $results = [
-                'public_id' => $cloundary_upload['public_id'],
-                'url' => $cloundary_upload['url'],
-                'secure_url' => $cloundary_upload['secure_url'],
-                'format' => $cloundary_upload['format'],
-                'bytes' => $cloundary_upload['bytes'],
-            ];
+            $results = $this->imageUpload($request->file('avatar'), 370, 455);
 
             $attributes['avatar'] = json_encode($results);
         }
-
-
 
         $team->update($attributes);
 
@@ -170,14 +125,13 @@ class TeamController extends Controller
         return back();
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Team $team)
     {
+        if ($team->avatar != null) {
+            $publicId = json_decode($team->avatar)->public_id;
+            $this->imageDelete($publicId);
+        }
+        
         $team->delete();
 
         return back();
