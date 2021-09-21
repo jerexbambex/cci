@@ -6,14 +6,12 @@ use App\Event;
 use Illuminate\Http\Request;
 use JD\Cloudder\Facades\Cloudder;
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ImageUpload;
 
 class EventController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    use ImageUpload;
+
     public function index()
     {
         $events = Event::all();
@@ -21,11 +19,6 @@ class EventController extends Controller
         return view('dashboard.event.index', compact('events'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         return view('dashboard.event.create');
@@ -44,7 +37,6 @@ class EventController extends Controller
             'description' => 'required',
             'date' =>'required',
             'time' => 'required',
-            'avatar'=>'mimes:jpeg,bmp,jpg,png|between:1, 6000',
         ]);
 
         $attributes['name'] = request()->input('name');
@@ -53,21 +45,9 @@ class EventController extends Controller
         $attributes['time'] = request()->input('time');
 
          if ($request->hasFile('avatar')) {
-            Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality"=>"auto:best", 
-                                            "fetch_format"=>"auto"
-                                        ));
-            $cloundary_upload = Cloudder::getResult();
-            $results = [
-                'public_id' => $cloundary_upload['public_id'],
-                'url' => $cloundary_upload['url'],
-                'secure_url' => $cloundary_upload['secure_url'],
-                'format' => $cloundary_upload['format'],
-                'bytes' => $cloundary_upload['bytes'],
-            ];
-
+            request()->validate(['avatar'=> 'mimes:jpeg,bmp,jpg,png|between:1, 6000']);
+            $results = $this->imageUpload($request->file('avatar'));
+            
             $attributes['avatar'] = json_encode($results);
         }
 
@@ -77,35 +57,16 @@ class EventController extends Controller
         return back();
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Event $event)
     {
         return view('dashboard.event.edit', compact('event'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, Event $event)
     {
          request()->validate([
@@ -124,23 +85,10 @@ class EventController extends Controller
         if ($request->hasFile('avatar')) {
             if ($event->avatar != null) {
                 $publicId = json_decode($event->avatar)->public_id;
-                Cloudder::delete($publicId, array());
+                $this->imageDelete($publicId);
             }
 
-            Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality"=>"auto:best", 
-                                            "fetch_format"=>"auto"
-                                        ));
-            $cloundary_upload = Cloudder::getResult();
-            $results = [
-                'public_id' => $cloundary_upload['public_id'],
-                'url' => $cloundary_upload['url'],
-                'secure_url' => $cloundary_upload['secure_url'],
-                'format' => $cloundary_upload['format'],
-                'bytes' => $cloundary_upload['bytes'],
-            ];
+            $results = $this->imageUpload($request->file('avatar'));
 
             $attributes['avatar'] = json_encode($results);
         }
@@ -151,14 +99,13 @@ class EventController extends Controller
         return back();
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Event $event)
     {
+        if ($event->avatar != null) {
+            $publicId = json_decode($event->avatar)->public_id;
+            $this->imageDelete($publicId);
+        }
+        
         $event->delete();
 
         return back();

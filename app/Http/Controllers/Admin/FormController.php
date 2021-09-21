@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Form;
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ImageUpload;
 use Illuminate\Http\Request;
 use JD\Cloudder\Facades\Cloudder;
 
 class FormController extends Controller
 {
+    use ImageUpload;
+    
     public function index()
     {
     	$forms = Form::all();
@@ -50,7 +53,7 @@ class FormController extends Controller
     	if ($request->hasFile('avatar')) {
             if ($form->avatar != null) {
                 $publicId = json_decode($form->avatar)->public_id;
-                Cloudder::delete($publicId, array());
+                $this->imageDelete($publicId);
             }
 
             Cloudder::upload($request->file('avatar'), null, array('folder' => 'cambridgecollege', "public_id" => "admission_form"));

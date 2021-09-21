@@ -77,7 +77,7 @@ Route::group(['prefix' => 'dashboard'], function () {
 		Route::post('/testimonials', 'Admin\TestimonialController@store')->name('admin.testimonial.store');
 		Route::get('/testimonials/{testimonial}/edit', 'Admin\TestimonialController@edit')->name('admin.testimonial.edit');
 		Route::patch('/testimonials/{testimonial}', 'Admin\TestimonialController@update')->name('admin.testimonial.update');
-		Route::delete('/testimonials/{testimonial}', 'Admin\TestimonialController@delete')->name('admin.testimonial.delete');
+		Route::delete('/testimonials/{testimonial}', 'Admin\TestimonialController@destroy')->name('admin.testimonial.delete');
 
 		Route::get('/inbox', 'Admin\InboxController@index')->name('admin.inbox.index');
 		Route::get('/inbox/{contact}', 'Admin\InboxController@show')->name('admin.inbox.show');

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ImageUpload;
 use App\Principal;
 use Illuminate\Http\Request;
 use JD\Cloudder\Facades\Cloudder;
 
 class PrincipalController extends Controller
 {
+    use ImageUpload;
+
     public function edit(Principal $principal)
     {
     	return view('dashboard.speech.principal.edit', compact('principal'));
@@ -21,30 +24,15 @@ class PrincipalController extends Controller
     	]);
 
     	if ($request->hasFile('avatar')) {
+            request()->validate(['avatar'=> 'mimes:jpeg,bmp,jpg,png|between:1, 6000']);
+
             if ($principal->avatar != null) {
                 $publicId = json_decode($principal->avatar)->public_id;
-                Cloudder::delete($publicId, array());
+                $this->imageDelete($publicId);
             }
 
-            Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality" => 'auto:best',
-                                            'gravity' => 'face', 
-                                            "fetch_format"=>"auto",
-                                            'width' => 370,
-                                            'height' => 455,
-                                            'crop' => 'fill'
-                                        ));
-            $cloundary_upload = Cloudder::getResult();
-            $results = [
-                'public_id' => $cloundary_upload['public_id'],
-                'url' => $cloundary_upload['url'],
-                'secure_url' => $cloundary_upload['secure_url'],
-                'format' => $cloundary_upload['format'],
-                'bytes' => $cloundary_upload['bytes'],
-            ];
-
+            $results = $this->imageUpload($request->file('avatar', '370', 455));
+            
             $attributes['avatar'] = json_encode($results);
         }
     	

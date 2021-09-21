@@ -12,7 +12,7 @@ trait ImageUpload
     {
         //Upload to Cloudinary
         $response = Cloudinary::upload($avatar->getRealPath(), [
-                                        'folder' => 'cambridge/',
+                                        'folder' => 'cambridgecollege/',
                                         'transformation' => [
                                             'gravity' => 'face',
                                             'quality' => 'auto:best',
