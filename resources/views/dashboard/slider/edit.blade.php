@@ -27,6 +27,7 @@
                             <div class="card-title mb-3">Add new image</div>
                             <form method="POST" action="{{ route('admin.gallery.update', $gallery->path()) }}" enctype="multipart/form-data">
                             	@csrf
+                                @method('patch')
                                 <div class="row">
                                     <div class="col-md-6 form-group mb-3">
                                         <label for="title">Title</label>

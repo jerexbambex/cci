@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JD\Cloudder\Facades\Cloudder;
 use App\Gallery;
+use App\Http\Traits\ImageUpload;
 
 class GalleryController extends Controller
 {
+    use ImageUpload;
+
     public function index()
     {
     	$sliders = Gallery::all();
@@ -30,22 +33,7 @@ class GalleryController extends Controller
 
     	$attributes['title'] = request()->input('title');
 
-    	Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality"=>"auto:best", 
-                                            "fetch_format"=>"auto",
-                                            'height' => 455,
-                                            'crop' => 'fill'
-                                        ));
-        $cloundary_upload = Cloudder::getResult();
-        $results = [
-            'public_id' => $cloundary_upload['public_id'],
-            'url' => $cloundary_upload['url'],
-            'secure_url' => $cloundary_upload['secure_url'],
-            'format' => $cloundary_upload['format'],
-            'bytes' => $cloundary_upload['bytes'],
-        ];
+        $results = $this->imageUpload($request->file('avatar'));
 
         $attributes['avatar'] = json_encode($results);
 
@@ -70,24 +58,9 @@ class GalleryController extends Controller
 
     	if ($request->hasFile('avatar')) {
             $publicId = json_decode($gallery->avatar)->public_id;
-            Cloudder::delete($publicId, array());
+            $this->imageDelete($publicId);
 
-            Cloudder::upload($request->file('avatar'), null, 
-                                        array(
-                                            'folder' => 'cambridgecollege',
-                                            "quality"=>"auto:best", 
-                                            "fetch_format"=>"auto",
-                                            'height' => 455,
-                                            'crop' => 'fill'
-                                        ));
-            $cloundary_upload = Cloudder::getResult();
-            $results = [
-                'public_id' => $cloundary_upload['public_id'],
-                'url' => $cloundary_upload['url'],
-                'secure_url' => $cloundary_upload['secure_url'],
-                'format' => $cloundary_upload['format'],
-                'bytes' => $cloundary_upload['bytes'],
-            ];
+            $results = $this->imageUpload($request->file('avatar'));
 
             $attributes['avatar'] = json_encode($results);
         }
@@ -95,6 +68,17 @@ class GalleryController extends Controller
         $gallery->update($attributes);
 
         request()->session()->flash('message', 'Gallery updated successfully!');
+        return back();
+    }
+
+    public function destroy(Gallery $gallery)
+    {
+        $publicId = json_decode($gallery->avatar)->public_id;
+        $this->imageDelete($publicId);
+
+        $gallery->delete();
+
+        request()->session()->flash('message', 'Record deleted successfully!');
         return back();
     }
 }
